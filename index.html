@@ -369,7 +369,7 @@
         let allData = [];
 
         // Load and parse CSV file
-        Papa.parse('results.csv', {
+        Papa.parse('results.csv?v=' + new Date().getTime(), {
             download: true,
             header: true,
             skipEmptyLines: true,
