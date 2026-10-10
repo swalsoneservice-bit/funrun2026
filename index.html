@@ -195,70 +195,139 @@
         }
         .close-btn:hover { color: #000; }
 
-        /* Certificate Styling */
+        /* Elegant certificate styling */
         .cert-card {
-            border: 10px solid var(--primary-color);
-            padding: 40px 30px;
+            --cert-teal: #087f75;
+            --cert-gold: #c6a45a;
+            border: 3px solid var(--cert-teal);
+            outline: 1px solid var(--cert-gold);
+            outline-offset: -10px;
+            padding: 34px 34px 26px;
             text-align: center;
-            background: #fdfefe;
+            background: radial-gradient(circle at top, #ffffff 0%, #fbfdfc 68%, #f3faf8 100%);
             position: relative;
+            overflow: hidden;
+            color: #34434a;
         }
-        .cert-brand {
+        .cert-card:before, .cert-card:after {
+            content: "✦";
+            position: absolute;
+            color: var(--cert-gold);
+            font-size: 25px;
+            top: 13px;
+        }
+        .cert-card:before { left: 18px; }
+        .cert-card:after { right: 18px; }
+        .cert-topline {
+            color: var(--cert-teal);
             font-size: 14px;
-            color: #777;
+            font-weight: 800;
             text-transform: uppercase;
-            letter-spacing: 2px;
+            letter-spacing: 3px;
+            margin: 0 0 8px;
         }
+        .cert-hero {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 20px;
+            margin: 2px auto 8px;
+        }
+        .cert-runner-art { width: 86px; height: 76px; flex: 0 0 auto; }
         .cert-title {
-            font-size: 26px;
-            color: var(--dark-color);
-            font-weight: bold;
+            font-size: 27px;
+            line-height: 1.2;
+            color: #243b48;
+            font-weight: 800;
             text-transform: uppercase;
-            margin: 5px 0 0 0;
+            margin: 0;
         }
         .cert-subtitle {
-            font-size: 16px;
-            color: var(--primary-color);
-            margin-bottom: 25px;
+            display: inline-block;
+            font-size: 14px;
+            color: var(--cert-teal);
+            margin: 8px 0 15px;
             text-transform: uppercase;
-            letter-spacing: 2px;
-            font-weight: 600;
+            letter-spacing: 3px;
+            font-weight: 800;
+            padding: 7px 20px;
+            border-top: 1px solid var(--cert-gold);
+            border-bottom: 1px solid var(--cert-gold);
         }
+        .cert-intro { margin: 8px 0 0; font-size: 14px; }
         .cert-name {
             font-size: 32px;
-            color: var(--dark-color);
+            line-height: 1.25;
+            color: #183e49;
             font-weight: bold;
-            border-bottom: 2px solid var(--primary-color);
+            border-bottom: 2px solid var(--cert-gold);
             display: inline-block;
-            padding-bottom: 5px;
-            margin: 15px 0;
+            padding: 0 22px 7px;
+            margin: 10px 0;
+            overflow-wrap: anywhere;
         }
+        .cert-description { margin: 5px auto 0; font-size: 13px; }
         .cert-details {
             display: flex;
             justify-content: space-around;
-            margin-top: 25px;
+            margin-top: 20px;
+            padding: 10px 4px;
             flex-wrap: wrap;
+            border-top: 1px solid #dce9e5;
+            border-bottom: 1px solid #dce9e5;
+            gap: 8px;
         }
-        .cert-box {
-            margin: 8px 12px;
-        }
+        .cert-box { margin: 5px 8px; min-width: 90px; }
         .cert-box span {
             display: block;
-            font-size: 12px;
-            color: #777;
+            font-size: 10px;
+            color: #66777b;
             text-transform: uppercase;
+            letter-spacing: .8px;
+            margin-bottom: 4px;
         }
-        .cert-box strong {
-            font-size: 17px;
-            color: #333;
-        }
-        .cert-footer {
-            margin-top: 35px;
-            font-size: 12px;
-            color: #888;
+        .cert-box strong { font-size: 16px; color: #243b48; }
+        .cert-bottom {
             display: flex;
             justify-content: space-between;
-            padding: 0 20px;
+            align-items: end;
+            gap: 18px;
+            margin-top: 17px;
+        }
+        .cert-organizer {
+            text-align: left;
+            color: #42565a;
+            font-size: 12px;
+            line-height: 1.7;
+            font-weight: 700;
+        }
+        .cert-organizer .label {
+            display: block;
+            color: #738184;
+            font-size: 9px;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+        }
+        .cert-stamp {
+            width: 112px;
+            height: 112px;
+            flex: 0 0 112px;
+            transform: rotate(-9deg);
+            opacity: .92;
+        }
+        @media (max-width: 600px) {
+            .cert-card { padding: 28px 18px 20px; }
+            .cert-hero { gap: 8px; }
+            .cert-runner-art { width: 56px; height: 58px; }
+            .cert-title { font-size: 20px; }
+            .cert-name { font-size: 25px; }
+            .cert-stamp { width: 86px; height: 86px; flex-basis: 86px; }
+            .cert-bottom { align-items: center; }
+        }
+        @media print {
+            @page { size: A4 landscape; margin: 10mm; }
+            body { padding: 0 !important; background: white !important; }
+            .cert-card { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
         }
         .print-actions {
             text-align: center;
@@ -319,12 +388,23 @@
             <span class="close-btn" onclick="closeModal()">&times;</span>
             
             <div id="certificateView" class="cert-card">
-                <div class="cert-brand">Swal-Sone Service Presents</div>
-                <div class="cert-title">Physiotherapy Day Fun Run-2026</div>
+                <div class="cert-topline">BTL Aesthetics Myanmar Presents</div>
+                <div class="cert-hero">
+                    <!-- Original vector runner illustration; no external image required -->
+                    <svg class="cert-runner-art" viewBox="0 0 100 90" role="img" aria-label="Runner illustration" xmlns="http://www.w3.org/2000/svg">
+                        <circle cx="68" cy="15" r="9" fill="#c6a45a"/>
+                        <path d="M61 28 L47 43 L61 53 L76 45" fill="none" stroke="#087f75" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/>
+                        <path d="M48 42 L31 36 L19 47" fill="none" stroke="#087f75" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
+                        <path d="M59 53 L45 68 L25 70" fill="none" stroke="#243b48" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/>
+                        <path d="M60 53 L72 68 L88 74" fill="none" stroke="#243b48" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/>
+                        <path d="M10 82 H91" stroke="#c6a45a" stroke-width="3" stroke-linecap="round"/>
+                    </svg>
+                    <div class="cert-title">Physiotherapy Day<br>Fun Run 2026</div>
+                </div>
                 <div class="cert-subtitle">Certificate of Achievement</div>
-                <p>This is to proudly certify that</p>
+                <p class="cert-intro">This is to proudly certify that</p>
                 <div class="cert-name" id="certRunnerName">Runner Name</div>
-                <p>has successfully completed the race with the following official results:</p>
+                <p class="cert-description">has successfully completed the race with the following official results:</p>
                 
                 <div class="cert-details">
                     <div class="cert-box">
@@ -352,10 +432,21 @@
                         <strong id="certGenderRank">-</strong>
                     </div>
                 </div>
-
-                <div class="cert-footer">
-                    <div>Organized by: Swal-Sone Service</div>
-                    <div>Owner: John Smith</div>
+                <div class="cert-bottom">
+                    <div class="cert-organizer">
+                        <span class="label">Organized by</span>
+                        <span>Triathlon Myanmar</span>
+                    </div>
+                    <!-- Decorative physiotherapy-inspired seal: medical cross + human movement -->
+                    <svg class="cert-stamp" viewBox="0 0 120 120" role="img" aria-label="Physiotherapy achievement seal" xmlns="http://www.w3.org/2000/svg">
+                        <circle cx="60" cy="60" r="54" fill="#fffdf7" stroke="#b7473e" stroke-width="3" stroke-dasharray="2.5 2.5"/>
+                        <circle cx="60" cy="60" r="46" fill="none" stroke="#b7473e" stroke-width="1.8"/>
+                        <circle cx="60" cy="60" r="31" fill="#b7473e" opacity=".09"/>
+                        <path d="M53 38 H67 V51 H80 V65 H67 V78 H53 V65 H40 V51 H53 Z" fill="#b7473e"/>
+                        <path d="M37 86 Q60 96 83 86" fill="none" stroke="#b7473e" stroke-width="2" stroke-linecap="round"/>
+                        <text x="60" y="19" text-anchor="middle" font-size="8" font-weight="800" letter-spacing="1" fill="#b7473e">PHYSIOTHERAPY</text>
+                        <text x="60" y="105" text-anchor="middle" font-size="8" font-weight="800" letter-spacing="1.4" fill="#b7473e">FINISHER 2026</text>
+                    </svg>
                 </div>
             </div>
 
