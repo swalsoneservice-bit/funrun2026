@@ -376,10 +376,18 @@
             complete: function(results) {
                 allData = results.data;
                 let tbody = document.getElementById('tableBody');
+
+                // Count runners by gender so Gender Ranking can display rank/total (e.g. 1/100).
+                const genderTotals = allData.reduce((totals, row) => {
+                    const gender = normalizeGender(row.Gender);
+                    if (gender) totals[gender] = (totals[gender] || 0) + 1;
+                    return totals;
+                }, {});
                 
                 if (allData.length > 0) {
                     allData.forEach((row, index) => {
                         let tr = document.createElement('tr');
+                        const genderRankDisplay = formatGenderRanking(row, genderTotals);
                         
                         tr.innerHTML = `
                             <td><strong>${row.BIB || '-'}</strong></td>
@@ -388,7 +396,7 @@
                             <td><span class="badge-category">${row.Category || '-'}</span></td>
                             <td>${row.Duration || '-'}</td>
                             <td><strong>${row['Overall Ranking'] || '-'}</strong></td>
-                            <td><strong>${row['Gender Ranking'] || '-'}</strong></td>
+                            <td><strong>${genderRankDisplay}</strong></td>
                             <td>
                                 <button class="btn-cert" onclick="openCertificate(${index})">📜 Print Cert</button>
                             </td>
@@ -398,6 +406,26 @@
                 }
             }
         });
+
+        // Normalize common gender labels while keeping Female and Male totals separate.
+        function normalizeGender(value) {
+            const gender = String(value || '').trim().toLowerCase();
+            if (gender === 'female' || gender === 'f') return 'female';
+            if (gender === 'male' || gender === 'm') return 'male';
+            return gender;
+        }
+
+        // Display Gender Ranking as rank/total, e.g. 1/100.
+        function formatGenderRanking(runner, totals) {
+            const rawRank = String(runner['Gender Ranking'] || '').trim();
+            if (!rawRank) return '-';
+
+            // If the CSV already contains a rank/total value, use only the rank portion.
+            const rank = rawRank.split('/')[0].trim();
+            const gender = normalizeGender(runner.Gender);
+            const total = totals[gender] || 0;
+            return total ? `${rank}/${total}` : rank;
+        }
 
         // Search Function
         function searchTable() {
@@ -429,7 +457,12 @@
             document.getElementById('certCategory').textContent = runner.Category || '-';
             document.getElementById('certDuration').textContent = runner.Duration || '-';
             document.getElementById('certOverallRank').textContent = runner['Overall Ranking'] || '-';
-            document.getElementById('certGenderRank').textContent = runner['Gender Ranking'] || '-';
+            const genderTotals = allData.reduce((totals, row) => {
+                const gender = normalizeGender(row.Gender);
+                if (gender) totals[gender] = (totals[gender] || 0) + 1;
+                return totals;
+            }, {});
+            document.getElementById('certGenderRank').textContent = formatGenderRanking(runner, genderTotals);
 
             document.getElementById('certModal').style.display = 'block';
         }
