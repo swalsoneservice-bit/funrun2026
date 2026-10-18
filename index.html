@@ -79,6 +79,33 @@
         input[type="text"]:focus {
             box-shadow: 0 4px 12px rgba(22, 160, 133, 0.3);
         }
+        .rank-filters {
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin: 14px auto 6px;
+        }
+        .rank-filter {
+            border: 1px solid var(--primary-color);
+            background: white;
+            color: var(--primary-color);
+            padding: 9px 15px;
+            border-radius: 22px;
+            cursor: pointer;
+            font-weight: 700;
+            font-size: 13px;
+        }
+        .rank-filter:hover, .rank-filter.active {
+            background: var(--primary-color);
+            color: white;
+        }
+        .result-summary {
+            color: #66777b;
+            font-size: 13px;
+            margin: 8px 0 0;
+        }
+
         .table-container { 
             overflow-x: auto; 
             background: white; 
@@ -359,7 +386,13 @@
         </header>
 
         <div class="search-container">
-            <input type="text" id="searchInput" onkeyup="searchTable()" placeholder="BIB သို့မဟုတ် Runner Name ဖြင့် ရှာပါ...">
+            <input type="text" id="searchInput" oninput="searchTable()" placeholder="BIB သို့မဟုတ် Runner Name ဖြင့် ရှာပါ...">
+            <div class="rank-filters" aria-label="Top five filters">
+                <button type="button" class="rank-filter active" id="bothTopBtn" onclick="setRankFilter('both')">Male & Female Top 5</button>
+                <button type="button" class="rank-filter" id="maleTopBtn" onclick="setRankFilter('male')">Male Top 5</button>
+                <button type="button" class="rank-filter" id="femaleTopBtn" onclick="setRankFilter('female')">Female Top 5</button>
+            </div>
+            <p id="resultSummary" class="result-summary">Male Top 5 နှင့် Female Top 5 ကို ပြသထားသည်။</p>
         </div>
 
         <div class="table-container">
@@ -464,19 +497,20 @@
     <script>
         let allData = [];
 
-        // Load and parse CSV file
+        let rankFilter = 'both';
+
+        // Load all participants from CSV, but show only Top 5 by gender by default.
         Papa.parse('results.csv?v=' + new Date().getTime(), {
             download: true,
             header: true,
             skipEmptyLines: true,
             transformHeader: function(header) {
-                return String(header || '').replace(/^\uFEFF/, '').trim();
+                return String(header || '').replace(/^\\uFEFF/, '').trim();
             },
             complete: function(results) {
                 allData = (results.data || []).filter(row =>
                     row && (row.BIB || row.Name || row.Gender || row.Duration)
                 );
-                let tbody = document.getElementById('tableBody');
 
                 if (results.errors && results.errors.length) {
                     console.error('CSV parsing errors:', results.errors);
@@ -489,39 +523,7 @@
                     return;
                 }
 
-                // Count runners by gender so Gender Ranking can display rank/total (e.g. 1/100).
-                const genderTotals = allData.reduce((totals, row) => {
-                    const gender = normalizeGender(row.Gender);
-                    if (gender) totals[gender] = (totals[gender] || 0) + 1;
-                    return totals;
-                }, {});
-                
-                if (allData.length > 0) {
-                    allData.forEach((row, index) => {
-                        let tr = document.createElement('tr');
-                        const genderRankDisplay = formatGenderRanking(row, genderTotals);
-                        
-                        tr.innerHTML = `
-                            <td><strong>${row.BIB || '-'}</strong></td>
-                            <td>${row.Name || '-'}</td>
-                            <td>${row.Gender || '-'}</td>
-                            <td><span class="badge-category">${row.Category || '-'}</span></td>
-                            <td>${row.Duration || '-'}</td>
-                            <td><strong>${formatOverallRanking(row, allData.length)}</strong></td>
-                            <td><strong>${genderRankDisplay}</strong></td>
-                            <td>
-                                <button class="btn-cert" onclick="openCertificate(${index})">📜 Print Cert</button>
-                            </td>
-                        `;
-                        tbody.appendChild(tr);
-                    });
-                }
-            },
-            error: function(error) {
-                console.error('Could not load results.csv:', error);
-                document.getElementById('noResult').textContent =
-                    'results.csv ကို ဖတ်မရပါ။ GitHub Repository ထဲတွင် results.csv ရှိ/မရှိ စစ်ဆေးပါ။';
-                document.getElementById('noResult').style.display = 'block';
+                renderTable();
             },
             error: function(error) {
                 console.error('Could not load results.csv:', error);
@@ -565,23 +567,122 @@
             return total ? `${rank}/${total}` : rank;
         }
 
-        // Search Function
-        function searchTable() {
-            let input = document.getElementById("searchInput").value.toUpperCase();
-            let trs = document.getElementById("tableBody").getElementsByTagName("tr");
-            let hasMatch = false;
+        // Extract numeric rank from values such as "1", "1/131", or "1 of 131".
+        function getNumericRank(row, type) {
+            const raw = type === 'overall'
+                ? String(row['Overall Ranking'] || row['Overall Rank'] || '').trim()
+                : String(row['Gender Ranking'] || row['Gender Rank'] || '').trim();
+            const match = raw.match(/^\\s*(\\d+)/);
+            return match ? Number(match[1]) : Number.POSITIVE_INFINITY;
+        }
 
-            for (let i = 0; i < trs.length; i++) {
-                let text = trs[i].textContent || trs[i].innerText;
-                if (text.toUpperCase().indexOf(input) > -1) {
-                    trs[i].style.display = "";
-                    hasMatch = true;
-                } else {
-                    trs[i].style.display = "none";
-                }
+        function setRankFilter(filter) {
+            rankFilter = filter;
+            document.getElementById('bothTopBtn').classList.toggle('active', filter === 'both');
+            document.getElementById('maleTopBtn').classList.toggle('active', filter === 'male');
+            document.getElementById('femaleTopBtn').classList.toggle('active', filter === 'female');
+            renderTable();
+        }
+
+        // Render top 5 by gender unless the visitor searches for a participant.
+        function renderTable() {
+            const tbody = document.getElementById('tableBody');
+            const query = document.getElementById('searchInput').value.trim().toLowerCase();
+            tbody.innerHTML = '';
+
+            const genderTotals = allData.reduce((totals, row) => {
+                const gender = normalizeGender(row.Gender);
+                if (gender) totals[gender] = (totals[gender] || 0) + 1;
+                return totals;
+            }, {});
+
+            let visibleRows;
+            if (query) {
+                // Search all participants, not only the top-five list.
+                visibleRows = allData.map((row, index) => ({ row, index })).filter(item => {
+                    const bib = String(item.row.BIB || '').toLowerCase();
+                    const name = String(item.row.Name || '').toLowerCase();
+                    return bib.includes(query) || name.includes(query);
+                });
+                document.getElementById('resultSummary').textContent =
+                    `ရှာဖွေမှုရလဒ်: ${visibleRows.length} ယောက် (Participants အားလုံးထဲမှ)`;
+            } else {
+                const selectedGenders = rankFilter === 'both'
+                    ? ['male', 'female']
+                    : [rankFilter];
+
+                visibleRows = [];
+                selectedGenders.forEach(gender => {
+                    const topFive = allData
+                        .map((row, index) => ({ row, index }))
+                        .filter(item => normalizeGender(item.row.Gender) === gender)
+                        .sort((a, b) => {
+                            const rankDifference = getNumericRank(a.row, 'gender') - getNumericRank(b.row, 'gender');
+                            return rankDifference !== 0 ? rankDifference : a.index - b.index;
+                        })
+                        .slice(0, 5);
+                    visibleRows.push(...topFive);
+                });
+
+                const label = rankFilter === 'both'
+                    ? 'Male Top 5 နှင့် Female Top 5'
+                    : (rankFilter === 'male' ? 'Male Top 5' : 'Female Top 5');
+                document.getElementById('resultSummary').textContent =
+                    `${label} ကိုသာ ပြသထားသည်။ ကျန် Participants များကို BIB သို့မဟုတ် Runner Name ဖြင့် ရှာနိုင်သည်။`;
             }
 
-            document.getElementById("noResult").style.display = hasMatch ? "none" : "block";
+            visibleRows.forEach(item => {
+                const row = item.row;
+                const index = item.index;
+                const tr = document.createElement('tr');
+
+                const values = [
+                    row.BIB || '-',
+                    row.Name || '-',
+                    row.Gender || '-',
+                    row.Category || '-',
+                    row.Duration || '-',
+                    formatOverallRanking(row, allData.length),
+                    formatGenderRanking(row, genderTotals)
+                ];
+
+                values.forEach((value, columnIndex) => {
+                    const td = document.createElement('td');
+                    if (columnIndex === 0 || columnIndex === 5 || columnIndex === 6) {
+                        const strong = document.createElement('strong');
+                        strong.textContent = value;
+                        td.appendChild(strong);
+                    } else if (columnIndex === 3) {
+                        const badge = document.createElement('span');
+                        badge.className = 'badge-category';
+                        badge.textContent = value;
+                        td.appendChild(badge);
+                    } else {
+                        td.textContent = value;
+                    }
+                    tr.appendChild(td);
+                });
+
+                const certCell = document.createElement('td');
+                const certButton = document.createElement('button');
+                certButton.className = 'btn-cert';
+                certButton.textContent = '📜 Print Cert';
+                certButton.onclick = function() { openCertificate(index); };
+                certCell.appendChild(certButton);
+                tr.appendChild(certCell);
+                tbody.appendChild(tr);
+            });
+
+            document.getElementById('noResult').style.display = visibleRows.length ? 'none' : 'block';
+            if (!visibleRows.length) {
+                document.getElementById('noResult').textContent = query
+                    ? 'ရှာဖွေမှုနှင့် ကိုက်ညီသော ရလဒ် မတွေ့ရှိပါ။'
+                    : 'ရွေးချယ်ထားသော Gender အတွက် ရလဒ် မတွေ့ရှိပါ။';
+            }
+        }
+
+        function searchTable() {
+            renderTable();
         }
 
         // Open Certificate Modal
