@@ -469,6 +469,9 @@
             download: true,
             header: true,
             skipEmptyLines: true,
+            transformHeader: function(header) {
+                return String(header || '').replace(/^\uFEFF/, '').trim();
+            },
             complete: function(results) {
                 allData = (results.data || []).filter(row =>
                     row && (row.BIB || row.Name || row.Gender || row.Duration)
@@ -519,6 +522,12 @@
                 document.getElementById('noResult').textContent =
                     'results.csv ကို ဖတ်မရပါ။ GitHub Repository ထဲတွင် results.csv ရှိ/မရှိ စစ်ဆေးပါ။';
                 document.getElementById('noResult').style.display = 'block';
+            },
+            error: function(error) {
+                console.error('Could not load results.csv:', error);
+                document.getElementById('noResult').textContent =
+                    'results.csv ကို ဖတ်မရပါ။ Repository ထဲက results.csv ဖိုင်နှင့် URL ကို စစ်ဆေးပါ။';
+                document.getElementById('noResult').style.display = 'block';
             }
         });
 
@@ -528,7 +537,9 @@
             if (!rawRank) return '-';
 
             // Avoid duplicating the total if the CSV already contains a value like 1/131.
-            const rank = rawRank.split('/')[0].trim();
+            const rank = rawRank.includes('/')
+                ? rawRank.split('/')[0].trim()
+                : rawRank.match(/^\s*(\d+)/)?.[1] || rawRank;
             return total ? `${rank}/${total}` : rank;
         }
 
@@ -546,7 +557,9 @@
             if (!rawRank) return '-';
 
             // If the CSV already contains a rank/total value, use only the rank portion.
-            const rank = rawRank.split('/')[0].trim();
+            const rank = rawRank.includes('/')
+                ? rawRank.split('/')[0].trim()
+                : rawRank.match(/^\s*(\d+)/)?.[1] || rawRank;
             const gender = normalizeGender(runner.Gender);
             const total = totals[gender] || 0;
             return total ? `${rank}/${total}` : rank;
